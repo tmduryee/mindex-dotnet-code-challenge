@@ -58,5 +58,76 @@ namespace CodeChallenge.Controllers
 
             return Ok(newEmployee);
         }
+
+        /// <summary>
+        /// Retreives the full reporting structure for an employee and the total count of direct and indirect reporting employees
+        /// </summary>
+        /// <param name="id">The employee ID to retrieve the reporting structure for</param>
+        /// <returns>Status response and ReportingStructure if successful</returns>
+		[HttpGet("{id}/reportingStructure")]
+        public IActionResult GetReportingStructureForEmployee(String id)
+		{
+            _logger.LogDebug($"Recieved reporting structure get request for employee '{id}'");
+
+			// Ensure the employee exists first!
+			var existingEmployee = _employeeService.GetById(id);
+			if (existingEmployee == null)
+				return NotFound();
+
+            // Retrieve the reporting structure for the employee
+			var reportingStructure = _employeeService.GetReportingStructureByEmployeeId(id);
+
+            return Ok(reportingStructure);
+		}
+
+        /// <summary>
+        /// Adds a compensation record for an employee indicating their salary and its effective date
+        /// </summary>
+        /// <param name="id">The employee ID to add a salary to</param>
+        /// <param name="compensation">The compensation object, which should contain 2 properties: salary (double) and effectiveDate (datetime)</param>
+        /// <returns>Status response and Compensation object (with populated Employee property) if successful</returns>
+		[HttpPost("{id}/compensation")]
+        public IActionResult AddCompensation(string id, [FromBody]Compensation compensation)
+		{
+            _logger.LogDebug($"Recieved compensation create request for employee '{id}'");
+
+            // Ensure the employee exists first!
+            var existingEmployee = _employeeService.GetById(id);
+            if (existingEmployee == null)
+                return UnprocessableEntity(); // If ID is invalid, throw 422
+
+            // Add the employee object to the compensation object
+            compensation.Employee = existingEmployee;
+
+            // Create the compensation record
+            _employeeService.CreateCompensation(compensation);
+
+            // Return the compensation
+            return CreatedAtRoute("getCompensationByEmployeeId", new { id = compensation.Employee.EmployeeId }, compensation);
+        }
+
+        /// <summary>
+        /// Gets the latest, non-future compensation for an employee. If employee or compensation don't exist, a NotFound error will be thrown.
+        /// </summary>
+        /// <param name="id">The employee ID to search by</param>
+        /// <returns>Status response and Compensation object</returns>
+        [HttpGet("{id}/compensation", Name = "getCompensationByEmployeeId")]
+        public IActionResult GetCompensation(string id)
+        {
+            _logger.LogDebug($"Recieved compensation create request for employee '{id}'");
+
+            // Check if employee exists
+            var existingEmployee = _employeeService.GetById(id);
+            if (existingEmployee == null)
+                return NotFound();
+
+            // Check if valid compensation record exists
+            var compensation = _employeeService.GetCompensationForEmployee(id);
+            if (compensation == null)
+                return NotFound();
+
+            // Return lastest, non-future compensation object
+            return Ok(compensation);
+        }
     }
 }
