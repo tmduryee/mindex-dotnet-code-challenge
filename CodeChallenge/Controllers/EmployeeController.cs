@@ -80,6 +80,11 @@ namespace CodeChallenge.Controllers
             return Ok(reportingStructure);
 		}
 
+        // I decided it made more sense to include compensation logic inside this controller rather than
+        // split the logic up into separate controllers, services, and repositories, as it made more sense
+        // to me for compensations to be accessed through /employee/{id}/compensation, as compensations are
+        // tied to employees - TD
+
         /// <summary>
         /// Adds a compensation record for an employee indicating their salary and its effective date
         /// </summary>
